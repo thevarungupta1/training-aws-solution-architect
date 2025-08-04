@@ -1,163 +1,260 @@
-## Lab Exercise: Creating a Custom VPC with Public and Private Subnets and Deploying EC2 Instances
-
-### Objective:
-
-Create a custom VPC with a public and private subnet, deploy one EC2 instance in each subnet, and test connectivity.
-
-### Prerequisites:
-
-* AWS account with sufficient permissions.
-* AWS Management Console access.
+Here's a detailed, structured step-by-step lab exercise to create a custom VPC with public and private subnets, an Internet Gateway, a NAT Gateway, deploy EC2 instances, and verify connectivity:
 
 ---
 
-### Step 1: Login to AWS Console
+## **Lab Exercise: AWS VPC with Public & Private Subnets, IGW, NAT Gateway, and EC2 Instances**
 
-* Log in to [AWS Management Console](https://console.aws.amazon.com).
+### **Objective:**
+
+Create a custom VPC with public and private subnets, configure an Internet Gateway and NAT Gateway, deploy EC2 instances in each subnet, and verify connectivity.
 
 ---
 
-### Step 2: Create Custom VPC
+### **Architecture Overview:**
 
-* Navigate to **VPC**.
+```
+Custom VPC (10.0.0.0/16)
+│
+├── Public Subnet (10.0.1.0/24)
+│   ├── EC2 Instance (Public Instance)
+│   └── Internet Gateway (IGW)
+│
+├── Private Subnet (10.0.2.0/24)
+│   ├── EC2 Instance (Private Instance)
+│   └── NAT Gateway (in Public Subnet)
+```
+
+---
+
+### **Prerequisites:**
+
+* AWS Account with appropriate IAM permissions
+* AWS Management Console access
+
+---
+
+## Step-by-step Lab Guide:
+
+---
+
+## **Step 1: Log in to AWS Management Console**
+
+* Navigate to [AWS Management Console](https://console.aws.amazon.com/).
+
+---
+
+## **Step 2: Create a Custom VPC**
+
+* Go to **VPC** service.
 * Click **Create VPC**.
-* Select **VPC only**.
-* Enter details:
 
-  * Name tag: `Lab-VPC`
+  * Name: `Lab-VPC`
   * IPv4 CIDR block: `10.0.0.0/16`
+  * Leave other settings default.
 * Click **Create VPC**.
 
 ---
 
-### Step 3: Create Subnets
+## **Step 3: Create Public Subnet**
 
-* Under **Subnets**, click **Create subnet**.
+* In **VPC** dashboard, select **Subnets** → **Create subnet**.
 
-**Public Subnet:**
-
-* VPC: Select `Lab-VPC`
-* Subnet name: `Public-Subnet`
-* Availability Zone: Choose one (e.g., `us-east-1a`)
-* IPv4 CIDR block: `10.0.1.0/24`
-
-**Private Subnet:**
-
-* Click **Add new subnet**
-* VPC: `Lab-VPC`
-* Subnet name: `Private-Subnet`
-* Availability Zone: same as public subnet (e.g., `us-east-1a`)
-* IPv4 CIDR block: `10.0.2.0/24`
+  * VPC: `Lab-VPC`
+  * Subnet name: `Public-Subnet`
+  * Availability Zone: Select `us-east-1a`
+  * IPv4 CIDR block: `10.0.1.0/24`
 * Click **Create subnet**.
 
 ---
 
-### Step 4: Create Internet Gateway and Attach to VPC
+## **Step 4: Create Private Subnet**
 
-* Under **Internet Gateways**, click **Create internet gateway**.
-* Name tag: `Lab-IGW`
-* Click **Create**.
-* Select the created IGW and click **Actions > Attach to VPC**.
-* Select `Lab-VPC`, click **Attach**.
+* Select **Create subnet** again.
 
----
-
-### Step 5: Create Route Tables
-
-**Public Route Table:**
-
-* Under **Route Tables**, click **Create route table**.
-* Name tag: `Public-RT`
-* VPC: Select `Lab-VPC`
-* Click **Create**.
-* Edit routes, click **Add route**:
-
-  * Destination: `0.0.0.0/0`
-  * Target: `Lab-IGW`
-* Save.
-* Under **Subnet associations**, select `Public-Subnet`.
-
-**Private Route Table:**
-
-* Create another route table `Private-RT`.
-* No additional routes (leave default).
-* Associate with `Private-Subnet`.
+  * VPC: `Lab-VPC`
+  * Subnet name: `Private-Subnet`
+  * Availability Zone: Select `us-east-1a`
+  * IPv4 CIDR block: `10.0.2.0/24`
+* Click **Create subnet**.
 
 ---
 
-### Step 6: Create Security Groups
+## **Step 5: Create Internet Gateway (IGW)**
 
-* Navigate to **Security Groups** > **Create security group**:
+* Select **Internet gateways** → **Create internet gateway**.
+
+  * Name: `Lab-IGW`
+* Click **Create internet gateway**.
+* After creation, select **Actions → Attach to VPC** and select `Lab-VPC`.
+
+---
+
+## **Step 6: Configure Route Table for Public Subnet**
+
+* Select **Route tables**.
+* Click **Create route table**.
+
+  * Name: `Public-RT`
+  * VPC: `Lab-VPC`
+* Click **Create**.
+* Select the route table, click **Edit routes**.
+
+  * Add route:
+
+    * Destination: `0.0.0.0/0`
+    * Target: Select your created IGW (`Lab-IGW`)
+* Click **Save changes**.
+* Select the same route table, under **Subnet associations**, click **Edit subnet associations**, choose **Public-Subnet**, and click **Save associations**.
+
+---
+
+## **Step 7: Allocate Elastic IP for NAT Gateway**
+
+* Go to **Elastic IPs** → Click **Allocate Elastic IP address**.
+* Note down the allocated Elastic IP.
+
+---
+
+## **Step 8: Create NAT Gateway**
+
+* Select **NAT Gateways** → **Create NAT gateway**.
+
+  * Name: `Lab-NAT-GW`
+  * Subnet: Select **Public-Subnet**
+  * Elastic IP allocation: Select allocated Elastic IP.
+* Click **Create NAT gateway** and wait until it reaches the state **Available**.
+
+---
+
+## **Step 9: Configure Route Table for Private Subnet**
+
+* Go to **Route tables** → **Create route table**.
+
+  * Name: `Private-RT`
+  * VPC: `Lab-VPC`
+* Click **Create**.
+* Select created route table and click **Edit routes**.
+
+  * Add route:
+
+    * Destination: `0.0.0.0/0`
+    * Target: Select the NAT Gateway (`Lab-NAT-GW`)
+* Click **Save changes**.
+* Under **Subnet associations**, click **Edit subnet associations**, select **Private-Subnet**, and click **Save associations**.
+
+---
+
+## **Step 10: Configure Security Groups**
+
+* Go to **Security Groups** → **Create security group**.
 
   * Name: `Lab-SG`
   * VPC: `Lab-VPC`
-  * Rules:
+  * Inbound rules:
 
-    * Allow SSH (`port 22`) from your IP (`My IP`).
-    * Allow ICMP (ping) from CIDR `10.0.0.0/16`.
+    * SSH (Port 22) from your IP or `0.0.0.0/0` for lab purposes.
+    * HTTP (Port 80) from `0.0.0.0/0`.
+  * Outbound rules: Allow all.
 * Click **Create security group**.
 
 ---
 
-### Step 7: Launch EC2 Instances
+## **Step 11: Launch EC2 Instance in Public Subnet**
 
-Navigate to **EC2 Dashboard > Instances > Launch Instances**.
+* Navigate to **EC2** → **Instances** → **Launch Instance**.
 
-**Public Instance:**
+  * Name: `Public-EC2`
+  * AMI: **Amazon Linux 2 AMI**
+  * Instance Type: `t2.micro`
+  * Key Pair: Create/choose existing key pair
+  * Network settings:
 
-* Name: `Public-Instance`
-* AMI: **Amazon Linux 2**
-* Instance type: `t2.micro`
-* Key pair: create or select existing
-* Network:
+    * VPC: `Lab-VPC`
+    * Subnet: `Public-Subnet`
+    * Auto-assign Public IP: `Enable`
+    * Security group: Select `Lab-SG`
+  * User data script (optional for connectivity tests):
 
-  * VPC: `Lab-VPC`
-  * Subnet: `Public-Subnet`
-  * Auto-assign Public IP: **Enable**
-* Security Group: `Lab-SG`
-* Launch Instance.
+```bash
+#!/bin/bash
+yum install -y httpd
+systemctl enable httpd
+systemctl start httpd
+echo "<h1>Public EC2</h1>" > /var/www/html/index.html
+```
 
-**Private Instance:**
+* Click **Launch instance**.
 
-* Name: `Private-Instance`
-* AMI: **Amazon Linux 2**
-* Instance type: `t2.micro`
-* Key pair: same as above
-* Network:
+---
 
+## **Step 12: Launch EC2 Instance in Private Subnet**
+
+* Repeat EC2 instance creation:
+
+  * Name: `Private-EC2`
   * VPC: `Lab-VPC`
   * Subnet: `Private-Subnet`
   * Auto-assign Public IP: **Disable**
-* Security Group: `Lab-SG`
-* Launch Instance.
+  * Security group: Select `Lab-SG`
+  * User data script:
+
+```bash
+#!/bin/bash
+yum install -y httpd
+systemctl enable httpd
+systemctl start httpd
+echo "<h1>Private EC2</h1>" > /var/www/html/index.html
+```
+
+* Launch instance.
 
 ---
 
-### Step 8: Test Connectivity
+## **Step 13: Test Connectivity**
 
-* SSH into `Public-Instance`:
+### Connect to **Public EC2 Instance**:
 
-```bash
-ssh -i "keypair.pem" ec2-user@<Public-Instance-IP>
-```
-
-* From Public Instance, ping Private Instance:
+* SSH using your key pair:
 
 ```bash
-ping <Private-Instance-Private-IP>
+ssh -i "your-key.pem" ec2-user@<Public-EC2-Public-IP>
 ```
 
-**You should see successful ping replies.**
+### Test internet connectivity from Public EC2:
+
+```bash
+ping google.com
+curl http://checkip.amazonaws.com
+```
+
+### Connect to **Private EC2 Instance via Public EC2 Instance**:
+
+* Transfer your private key to Public EC2 (use SCP).
+* From **Public EC2** instance, SSH into Private EC2 (using Private EC2's private IP):
+
+```bash
+ssh -i "your-key.pem" ec2-user@<Private-EC2-Private-IP>
+```
+
+### Test internet connectivity from Private EC2:
+
+```bash
+ping google.com
+curl http://checkip.amazonaws.com
+```
 
 ---
 
-### Clean-up:
+## **Lab Clean-up**
 
 * Terminate EC2 instances.
-* Delete created VPC components to avoid unnecessary charges.
+* Delete NAT gateway and release Elastic IP.
+* Detach and delete IGW.
+* Delete subnets, route tables, and security groups.
+* Finally, delete custom VPC.
 
 ---
 
-### Conclusion:
+## **Conclusion:**
 
-You've successfully set up a custom VPC with public and private subnets, deployed EC2 instances in each subnet, and tested connectivity.
+You have successfully created a custom AWS VPC with public and private subnets, deployed EC2 instances, configured IGW and NAT Gateway, and tested connectivity between the subnets and internet.
