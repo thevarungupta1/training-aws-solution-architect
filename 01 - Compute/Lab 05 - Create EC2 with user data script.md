@@ -60,14 +60,16 @@ Launch an EC2 Linux instance using the AWS Management Console, configure it with
 1. Expand **Advanced details**.
 2. In **User data**, paste the following script:
 
-    ```bash
-    #!/bin/bash
-    yum update -y
-    yum install -y httpd
-    systemctl start httpd
-    systemctl enable httpd
-    echo "<h1>Welcome to Apache HTTPD on EC2!</h1>" > /var/www/html/index.html
-    ```
+```bash
+#!/bin/bash
+# Use this for your user data (script from top tom bottom)
+# install httpd (Linux 2 version)
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+echo "<h1>Hello World from $(hostname -f)</h1>" > /var/www/html/index.html
+```
 
 ---
 
